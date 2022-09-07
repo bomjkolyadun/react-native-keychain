@@ -121,10 +121,34 @@ NSString *serviceValue(NSDictionary *options)
 
 NSString *accessGroupValue(NSDictionary *options)
 {
-  if (options && options[@"accessGroup"] != nil) {
-    return options[@"accessGroup"];
+  if (!options) {
+    return nil;
   }
-  return nil;
+  NSString* accessGroup = options[@"accessGroup"];
+  if (accessGroup == nil) {
+    return nil;
+  }
+  
+  BOOL isOnMac = NO;
+  
+  if (@available(iOS 14.0, *)) {
+    isOnMac = ([NSProcessInfo processInfo].isiOSAppOnMac || [NSProcessInfo processInfo].isMacCatalystApp);
+  } else if (@available(macOS 10, *)) {
+    isOnMac = YES;
+  }
+  
+  if (!isOnMac) {
+    return accessGroup;
+  }
+  
+  // Reference: https://developer.apple.com/documentation/bundleresources/entitlements/com_apple_security_application-groups
+  NSString* devTeamId = options[@"appleDevTeamId"];
+  if (devTeamId == nil) {
+    return accessGroup;
+  }
+  
+  NSArray* result = @[devTeamId, accessGroup];
+  return [result componentsJoinedByString:@"."];
 }
 
 NSString *authenticationPromptValue(NSDictionary *options)
